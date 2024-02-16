@@ -22,7 +22,7 @@ app.use(cors({
     credentials:true
 }))
 
-app.use('/profileimages',express.static('public/assets'))
+app.use('/profileimages',express.static('public'))
 app.use('/',userRouter)
 app.use('/admin',adminRouter)
 

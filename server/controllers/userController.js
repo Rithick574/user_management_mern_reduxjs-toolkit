@@ -6,8 +6,6 @@ const multer = require("multer");
 
 const User = require("../models/user");
 
-
-
 //post signup
 const postSignup = async (req, res) => {
   try {
@@ -109,7 +107,9 @@ const login = async (req, res) => {
 
 //edit profile
 const editprofile = async (req, res) => {
+  console.log("@#$%^&^&*&*");
   try {
+    // console.log(req.body);
     const name = req.body.name;
     const orgpassword = req.body.password;
     const currentPassword = req.body.currentpassword;
@@ -142,42 +142,58 @@ const editprofile = async (req, res) => {
 };
 
 //upload image
-const uploadImage=async(req,res)=>{
-    try {
-        const token = req.cookies.token
-        const verified = jwt.verify(token, process.env.JWT_SECRET);
+const uploadImage = async (req, res) => {
+  try {
+    const token = req.cookies.token;
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
 
-        const user = await User.findOne({ _id: verified.user })
-        const imageUrl = user.profile;
+    // const file = req.file.filename;
 
-        //deleting existin profile image
-        if (imageUrl !== "./src/assets/profileimg.jpg") {
+    const user = await User.findOne({ _id: verified.user });
 
-            const parsedUrl = new URL(imageUrl);
-            const imageName = path.basename(parsedUrl.pathname);
-
-            const folderPath = './public/assets';
-            const imagePath = path.join(folderPath, imageName);
-            if (fs.existsSync(imagePath)) {
-
-                fs.unlinkSync(imagePath);
-                console.log(`${imageName} has been deleted successfully.`);
-            } else {
-                console.log(`${imageName} does not exist in the folder.`);
-            }
-        }
-        const path_image = process.env.IMAGE_PATH + `profileimages/${req.file.filename}`
-        const data = await User.updateOne({ _id: verified.user }, { $set: { profile: path_image } });
-        res.json(data)
-
-    } catch (error) {
-        console.log(error);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
     }
-}
+
+    const imageUrl = user.profile;
+    console.log(imageUrl,"imageurl");
+
+    if (imageUrl !== "./src/assets/profileimg.jpg") {
+      console.log("2345678");
+      const parsedUrl = new URL(imageUrl);
+      console.log(parsedUrl,"parseUrl");
+      const imageName = path.basename(parsedUrl.pathname);
+      console.log(imageName,"imageName");
+      const folderPath = './public';
+      const imagePath = path.join(folderPath, imageName);
+      if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`${imageName} has been deleted successfully.`);
+      } else {
+          console.log(`${imageName} does not exist in the folder.`);
+      }
+  }
+
+  const path_image = process.env.IMAGE_PATH + `profileimages/${req.file.filename}`
+  const data = await User.updateOne({ _id: verified.user }, { $set: { profile: path_image } });
+  res.json(data)
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 
 //logout
 const logout = (req, res) => {
   res.clearCookie("token").send({ something: "here" });
 };
 
-module.exports = { postSignup, fetchData, login, logout, editprofile,uploadImage };
+module.exports = {
+  postSignup,
+  fetchData,
+  login,
+  logout,
+  editprofile,
+  uploadImage,
+};

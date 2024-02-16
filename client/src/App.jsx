@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from './pages/Home'
 import Profile from "./pages/Profile";
+import Admin from "./pages/Admin";
 
 
 axios.defaults.withCredentials = true;
@@ -34,7 +35,7 @@ function App() {
     <>
       <Router>
         <Routes>
-          <Route path="/" element={userData ? <Navigate to="/home" /> : <Navigate to="/login" />} />
+          <Route path="/" element={userData?.role=='user' ? <Navigate to="/home" /> : <Navigate to="/login" />} />
           <Route path="/login" element={!userData ? <Login/> : userData.role=="admin" ? <Navigate to="/admin" /> : <Navigate to="/home" />  } />
           <Route path="/signup" element={!userData ? <Signup/> : <Navigate to="/home" />} />
           <Route path="/home" element={userData && userData?.role === "user" ? <Home /> : <Navigate to="/login" />} />

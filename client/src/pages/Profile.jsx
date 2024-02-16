@@ -1,152 +1,310 @@
 import React, { useState } from "react";
+import Modal from "react-modal";
 import axios from "axios";
-import { useSelector, useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../redux/features/userSlice";
 import Navbar from "../Components/Navbar";
+import { isEmpty, isPasswordValid } from "../../helper/validation";
+import { useNavigate } from "react-router-dom";
 
+Modal.setAppElement("#root");
 
 const Profile = () => {
+  const [isModalOpen, setModalOpen] = useState(false);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const userData = useSelector((state) => state.user.userData);
+  console.log(userData, "&&&&&");
+  const [selectedFile, setSelectedFile] = useState(null);
 
-    const dispatch = useDispatch();
-    const userData = useSelector((state) => state.user.userData);
-  
-    const [updatedData, setUpdatedData] = useState({
-      name: userData.name || "",
-      email: userData.email || "",
-      role: userData.role || "",
-      password: "", 
-      profile: userData.profile || "",
-      profileImage: null,
-      newPassword:""
+  const [userdata, setUserdata] = useState({
+    ...userData,
+    currentpassword: "",
+    newpassword: "",
+  });
+
+  //errors state
+  const [errorst, setErrorst] = useState({
+    name: false,
+    currentpassword: false,
+    newpassword: false,
+  });
+
+  const [errdef, setErrDef] = useState({
+    name: "",
+    currentpassword: "",
+    newpassword: "",
+  });
+
+  const handleEditClick = () => {
+    setModalOpen(true);
+  };
+
+  const handleChange = (event) => {
+    setUserdata((previous) => ({
+      ...previous,
+      [event.target.name]: event.target.value,
+    }));
+  };
+
+  const handleFileChange = (event) => {
+    const selectedFile = event.target.files[0];
+    // console.log("Selected file:", selectedFile);
+    setSelectedFile(selectedFile);
+  };
+
+  const handleCloseModal = () => {
+    setErrorst({
+      name: false,
+      currentpassword: false,
+      newpassword: false,
+    });
+    setErrDef({
+      name: "",
+      currentpassword: "",
+      newpassword: "",
     });
 
-    const handleUpdateProfile = async () => {
-        try {
-          const response = await axios.put(
-            "http://localhost:5000/updateprofile",
-            updatedData
-          );
-    
-          if (response.data.success) {
-            dispatch(setUserData(response.data.updatedUserData));
-            // Redirect to the profile page after updating
-            // You can use 'useNavigate' from 'react-router-dom' here
-            // Example: navigate('/profile');
-          }
-        } catch (error) {
-          console.error("Error updating profile:", error);
+    setModalOpen(false);
+  };
+
+  const handleSaveChanges = async () => {
+    // console.log(userdata);
+    try {
+      const error = {
+        name: false,
+        currentpassword: false,
+        newpassword: false,
+      };
+
+      const errordef = {
+        name: "",
+        currentpassword: "",
+        newpassword: "",
+      };
+      let valid = true;
+
+      if (isEmpty(userdata.name)) {
+        valid = false;
+        error.name = true;
+        errordef.name = "name can't be empty";
+      }
+
+      if (
+        userdata.currentpassword.length == 0 ||
+        userdata.newpassword.length == 0
+      ) {
+        if (isEmpty(userdata.newpassword)) {
+          valid = false;
+          error.newpassword = true;
+          errordef.newpassword = "new password can't be empty";
+          console.log("111");
         }
-      };
+        if (isEmpty(userdata.currentpassword)) {
+          console.log("****");
+          valid = false;
+          error.currentpassword = true;
+          errordef.currentpassword = "current password can't be empty";
+        }
+      }
+      if (isPasswordValid(userdata.newpassword)) {
+        console.log("2222");
+        valid = false;
+        error.newpassword = true;
+        errordef.newpassword = "password is too weak";
+      }
+      // console.log( error.newpassword);
+      // console.log( error.newpassword,"$%^&");
+      setErrorst(error);
+      setErrDef(errordef);
 
-    const handleChange = (e) => {
-        setUpdatedData({
-          ...updatedData,
-          [e.target.name]: e.target.value,
+      if (valid) {
+        const formData = new FormData();
+        formData.append("profile", selectedFile);
+
+        const imgResponse = await axios.post(
+          "http://localhost:5000/uploadprofileimage/",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        console.log("Response from server image:", imgResponse.data);
+
+        const response = await axios.post(
+          "http://localhost:5000/editprofile",
+          userdata
+        );
+
+        if (response.data.error) {
+          setErrDef((previous) => ({
+            ...previous,
+            currentpassword: response.data.error,
+          }));
+        } else if (response.data.success) {
+          navigate("/home");
+        }
+
+        axios.get("http://localhost:5000/fetchuserdata/").then((response) => {
+          dispatch(setUserData(response.data));
         });
-      };
+      }
+    } catch (error) {
+      console.error("Error saving user data:", error);
+      // setModalOpen(false);
+    }
+  };
+
   return (
-   <>
-    <Navbar/>
-    <div className="max-w-md mx-auto mt-8">
-    <div className="flex justify-center items-center">
-    <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
-    </div>
-    <form>
-    {/* {updatedData.profile && ( */}
-            <div className="flex justify-center items-center mb-4">
-              <div className="rounded-full overflow-hidden h-20 w-20">
-                <img
-                  src={userData.profile}
-                  alt="Profile"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            </div>
-          {/* )} */}
-      <div className="mb-4">
-        <label htmlFor="name" className="block text-sm font-medium text-gray-600">
-          Name:
-        </label>
-        <input
-          type="text"
-          id="name"
-          name="name"
-          value={updatedData.name}
-          onChange={handleChange}
-          className="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-        />
+    <>
+      <Navbar />
+      <div className="max-w-md mx-auto mt-24">
+        <div className="flex justify-center items-center">
+          <h2 className="text-4xl font-bold mb-4">PROFILE</h2>
+        </div>
+        <br></br>
+        <br></br>
+        <div className="relative mb-4 items-center justify-center flex">
+          <img
+            src={ userData.profile}
+            alt="Profile"
+            className="w-32 h-32 rounded-full object-cover cursor-pointer"
+          />
+        </div>
+
+        <div className="mb-4 items-center ">
+          <p className="text-lg">
+            <span className="font-bold">Name:</span> {userData.name}
+          </p>
+          <br></br>
+          <p className="text-lg">
+            <span className="font-bold">Email:</span> {userData.email}
+          </p>
+          <br></br>
+          <br></br>
+          <br></br>
+
+          <div className="flex items-center justify-center">
+            <button
+              onClick={handleEditClick}
+              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+            >
+              Edit Profile
+            </button>
+          </div>
+        </div>
+
+        <Modal
+          isOpen={isModalOpen}
+          onRequestClose={handleCloseModal}
+          contentLabel="Edit Profile Modal"
+          className="modal mt-20 p-6 bg-white rounded-md shadow-lg max-w-md mx-auto"
+          overlayClassName="modal-overlay fixed inset-0 bg-black bg-opacity-50 z-50"
+        >
+          <h2 className="text-2xl font-bold mb-4 text-center">Edit Profile</h2>
+
+          <div className="relative mb-4 items-center justify-center flex">
+            <label className="cursor-pointer">
+              <img
+                src={userData.profile}
+                alt="Profile"
+                className="w-32 h-32 rounded-full object-cover cursor-pointer"
+              />
+
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+            </label>
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Name:
+            </label>
+            <input
+              type="text"
+              onChange={handleChange}
+              id="name"
+              name="name"
+              value={userdata.name}
+              className={`mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300 ${
+                errorst.name ? "border-red-500" : ""
+              }`}
+            />
+            {errorst.name && (
+              <p className="text-red-500 text-sm">{errdef.name}</p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="currentPassword"
+              className="block text-sm font-medium text-gray-600"
+            >
+              Current Password:
+            </label>
+            <input
+              type="password"
+              onChange={handleChange}
+              id="currentPassword"
+              name="currentpassword"
+              className={`mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300 ${
+                errorst.currentpassword ? "border-red-500" : ""
+              }`}
+            />
+            {errorst.currentpassword && (
+              <p className="text-red-500 text-sm">{errdef.currentpassword}</p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium text-gray-600"
+            >
+              New Password:
+            </label>
+            <input
+              type="password"
+              onChange={handleChange}
+              id="newPassword"
+              name="newpassword"
+              className={`mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300 ${
+                errorst.newpassword ? "border-red-500" : ""
+              }`}
+            />
+            {errorst.newpassword && (
+              <p className="text-red-500 text-sm">{errdef.newpassword}</p>
+            )}
+          </div>
+
+          <div className="flex items-center justify-around">
+            <button
+              onClick={handleSaveChanges}
+              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300 mr-2"
+            >
+              Save Changes
+            </button>
+            <button
+              onClick={handleCloseModal}
+              className="text-blue-500 hover:text-blue-700 focus:outline-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </Modal>
       </div>
-      <div className="mb-4">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-600">
-          Email:
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={updatedData.email}
-        //   onChange={handleChange}
-        readOnly
-          className="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-        />
-      </div>
+    </>
+  );
+};
 
-    <div className="mb-4">
-  <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-600">
-    Current Password:
-  </label>
-  <input
-    type="password"
-    id="currentPassword"
-    name="currentPassword"
-    value={updatedData.currentPassword}
-    onChange={handleChange}
-    className="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-  />
-</div>
-
-<div className="mb-4">
-  <label htmlFor="newPassword" className="block text-sm font-medium text-gray-600">
-    New Password:
-  </label>
-  <input
-    type="password"
-    id="newPassword"
-    name="newPassword"
-    value={updatedData.newPassword}
-    onChange={handleChange}
-    className="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-  />
-</div>
-
-<div className="mb-4">
-  <label htmlFor="confirmNewPassword" className="block text-sm font-medium text-gray-600">
-    Confirm New Password:
-  </label>
-  <input
-    type="password"
-    id="confirmNewPassword"
-    name="confirmNewPassword"
-    value={updatedData.confirmNewPassword}
-    onChange={handleChange}
-    className="mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300"
-  />
-</div>
-
-
-     <div className="flex items-center justify-center">
-     <button
-        type="button"
-        onClick={handleUpdateProfile}
-        className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
-      >
-        Update Profile
-      </button>
-     </div>
-    </form>
-  </div>
-  </>
-  )
-}
-
-export default Profile
+export default Profile;
