@@ -1,13 +1,24 @@
 const User = require("../models/user");
 const bcrypt = require("bcrypt");
+const mongoose = require('mongoose');
+
 
 const fetchUserDetails = async (req, res) => {
   try {
-    const data = await User.find({ role: { $ne: "admin" } });
+    const { search } = req.query;
+    let query = { role: { $ne: "admin" } };
+    if (search) {
+      query.name = { $regex: new RegExp(search, 'i') };
+    }
+    const data = await User.find(query);
 
     res.json({ data: data });
   } catch (error) {
     console.log(error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal Server Error in the fetchuser to admin',
+    });
   }
 };
 
@@ -33,7 +44,9 @@ const deleteUser = async (req, res) => {
 const editUser = async (req, res) => {
   try {
     if (req.body.value.length) {
-      const id = req.body.id;
+      // console.log(req.body,"********");
+      const id = req.body.user_id;
+      console.log(id);
       const newvalue = req.body.value;
       await User.updateOne({ _id: id }, { $set: { name: newvalue } });
     }
@@ -42,7 +55,7 @@ const editUser = async (req, res) => {
     console.log(error);
   }
 };
-
+ 
 // add user
 const addUser = async (req, res) => {
   try {

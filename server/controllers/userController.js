@@ -47,7 +47,7 @@ const postSignup = async (req, res) => {
 //fetch data
 const fetchData = async (req, res) => {
   try {
-    console.log("Here in backend");
+    // console.log("Here in backend");
 
     const token = req.cookies.token;
     if (!token) {
@@ -76,7 +76,7 @@ const login = async (req, res) => {
       return res.json({ emailerr: "User not found" });
     }
 
-    const passwordCorrect = bcrypt.compare(
+    const passwordCorrect =await bcrypt.compare(
       req.body.password,
       existingUser.password
     );
@@ -107,9 +107,8 @@ const login = async (req, res) => {
 
 //edit profile
 const editprofile = async (req, res) => {
-  console.log("@#$%^&^&*&*");
   try {
-    // console.log(req.body);
+    console.log(req.body);
     const name = req.body.name;
     const orgpassword = req.body.password;
     const currentPassword = req.body.currentpassword;
@@ -120,19 +119,22 @@ const editprofile = async (req, res) => {
     if (currentPassword.length && newPassword.length) {
       passwordCorrect = await bcrypt.compare(currentPassword, orgpassword);
       if (passwordCorrect) {
-        const salt = await bcrypt.genSalt();
+        const salt = await bcrypt.genSalt(10);
         const hashedNewPass = await bcrypt.hash(newPassword, salt);
         updateFields.password = hashedNewPass;
       }
     } else {
       passwordCorrect = true;
     }
-
+    
     await User.updateOne({ _id: req.body._id }, { $set: updateFields });
-
+    
+    console.log(passwordCorrect);
     if (passwordCorrect) {
+      console.log('trureee');
       res.json({ success: true });
     } else {
+      console.log('falseeeeeeeee');
       res.json({ error: "Incorrect password" });
     }
   } catch (error) {

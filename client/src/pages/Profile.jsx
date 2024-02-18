@@ -11,17 +11,22 @@ Modal.setAppElement("#root");
 
 const Profile = () => {
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isNameInputClicked, setNameInputClicked] = useState(false);
+  const [isPasswordInputClicked, setPasswordInputClicked] = useState(false);
+  const [isProfileInputClicked, setProfileInputClicked] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const userData = useSelector((state) => state.user.userData);
   console.log(userData, "&&&&&");
   const [selectedFile, setSelectedFile] = useState(null);
-
+  
   const [userdata, setUserdata] = useState({
     ...userData,
     currentpassword: "",
     newpassword: "",
   });
+  
+  const [previewImage, setPreviewImage] = useState(userData.profile);
 
   //errors state
   const [errorst, setErrorst] = useState({
@@ -40,6 +45,17 @@ const Profile = () => {
     setModalOpen(true);
   };
 
+  const handleNameInputClick = () => {
+    setNameInputClicked(true);
+  };
+
+  const handleProfileInputClick=()=>{
+    setProfileInputClicked(true)
+  }
+  const handlePasswordInputClick=()=>{
+    setPasswordInputClicked(true)
+  }
+
   const handleChange = (event) => {
     setUserdata((previous) => ({
       ...previous,
@@ -49,8 +65,10 @@ const Profile = () => {
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
-    // console.log("Selected file:", selectedFile);
     setSelectedFile(selectedFile);
+    const previewImageUrl = URL.createObjectURL(selectedFile);
+    setPreviewImage(previewImageUrl);
+    console.log(previewImageUrl,"##########");
   };
 
   const handleCloseModal = () => {
@@ -84,11 +102,15 @@ const Profile = () => {
       };
       let valid = true;
 
-      if (isEmpty(userdata.name)) {
-        valid = false;
-        error.name = true;
-        errordef.name = "name can't be empty";
+      if(isNameInputClicked){
+        if (isEmpty(userdata.name)) {
+          valid = false;
+          error.name = true;
+          errordef.name = "name can't be empty";
+        }
       }
+
+     if(isPasswordInputClicked){
 
       if (
         userdata.currentpassword.length == 0 ||
@@ -117,9 +139,11 @@ const Profile = () => {
       // console.log( error.newpassword,"$%^&");
       setErrorst(error);
       setErrDef(errordef);
+     }
 
       if (valid) {
-        const formData = new FormData();
+        if(isProfileInputClicked){
+          const formData = new FormData();
         formData.append("profile", selectedFile);
 
         const imgResponse = await axios.post(
@@ -131,8 +155,8 @@ const Profile = () => {
             },
           }
         );
+        }
 
-        console.log("Response from server image:", imgResponse.data);
 
         const response = await axios.post(
           "http://localhost:5000/editprofile",
@@ -140,9 +164,14 @@ const Profile = () => {
         );
 
         if (response.data.error) {
+          console.log("response.data.error:",response.data.error);
           setErrDef((previous) => ({
             ...previous,
             currentpassword: response.data.error,
+          }));
+          setErrorst((prevErrors) => ({
+            ...prevErrors,
+            currentpassword: true
           }));
         } else if (response.data.success) {
           navigate("/home");
@@ -169,13 +198,13 @@ const Profile = () => {
         <br></br>
         <div className="relative mb-4 items-center justify-center flex">
           <img
-            src={ userData.profile}
+            src={ userData.profile }
             alt="Profile"
             className="w-32 h-32 rounded-full object-cover cursor-pointer"
           />
         </div>
-
-        <div className="mb-4 items-center ">
+        <br></br>
+        <div className="mb-4 text-center ">
           <p className="text-lg">
             <span className="font-bold">Name:</span> {userData.name}
           </p>
@@ -209,7 +238,7 @@ const Profile = () => {
           <div className="relative mb-4 items-center justify-center flex">
             <label className="cursor-pointer">
               <img
-                src={userData.profile}
+                src={previewImage}
                 alt="Profile"
                 className="w-32 h-32 rounded-full object-cover cursor-pointer"
               />
@@ -219,6 +248,7 @@ const Profile = () => {
                 accept="image/*"
                 className="hidden"
                 onChange={handleFileChange}
+                onClick={handleProfileInputClick}
               />
             </label>
           </div>
@@ -233,6 +263,7 @@ const Profile = () => {
             <input
               type="text"
               onChange={handleChange}
+              onClick={handleNameInputClick}
               id="name"
               name="name"
               value={userdata.name}
@@ -240,6 +271,7 @@ const Profile = () => {
                 errorst.name ? "border-red-500" : ""
               }`}
             />
+            
             {errorst.name && (
               <p className="text-red-500 text-sm">{errdef.name}</p>
             )}
@@ -255,12 +287,14 @@ const Profile = () => {
             <input
               type="password"
               onChange={handleChange}
+              onClick={handlePasswordInputClick}
               id="currentPassword"
               name="currentpassword"
               className={`mt-1 p-2 w-full border rounded-md focus:outline-none focus:ring focus:border-blue-300 ${
                 errorst.currentpassword ? "border-red-500" : ""
               }`}
             />
+            {console.log(errorst.currentpassword,errdef.currentpassword,"!@#$%^&")}
             {errorst.currentpassword && (
               <p className="text-red-500 text-sm">{errdef.currentpassword}</p>
             )}

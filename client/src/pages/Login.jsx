@@ -50,6 +50,7 @@ const Login = () => {
     };
 
     let valid = true;
+
     if (isEmailValid(userCredentials.email)) {
       errmessage.email = "enter a valid email";
       errors.emailerr = true;
@@ -75,7 +76,7 @@ const Login = () => {
           "http://localhost:5000/login",
           userCredentials
         );
-        console.log(response.data);
+        console.log(userCredentials,"^^^^^^^^^^^^^^");
 
         if (response.data.success) {
           const userDataResponse = await axios.get(
