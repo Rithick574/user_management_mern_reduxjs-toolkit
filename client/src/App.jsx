@@ -43,7 +43,6 @@ function App() {
           <Route path="/admin" element={userData?.role=='admin'?<Admin />:<Navigate to="/login" />} />
         </Routes>
       </Router>
-
     </>
   );
 }

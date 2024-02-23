@@ -88,7 +88,9 @@ const login = async (req, res) => {
         {
           user: existingUser._id,
         },
-        process.env.JWT_SECRET
+        process.env.JWT_SECRET,{
+          expiresIn:"30d"
+        }
       );
 
       res
@@ -98,7 +100,8 @@ const login = async (req, res) => {
         })
         .json({ success: true });
     }
-    console.log("done");
+
+    // console.log("done");
   } catch (error) {
     console.error("Error during login:", error);
     res.status(500).json({ error: "Internal server error" });
